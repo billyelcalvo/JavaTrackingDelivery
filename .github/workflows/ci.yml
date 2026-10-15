@@ -66,4 +66,5 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Image size
-        run: docker image ls tracking-delivery:ci --format 'Image size: {{.Size}}' | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          docker image ls tracking-delivery:ci --format 'Image size: {{.Size}}' | tee -a "$GITHUB_STEP_SUMMARY"
