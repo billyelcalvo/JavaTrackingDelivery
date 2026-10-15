@@ -22,7 +22,11 @@ public class CourierAuthFilter extends OncePerRequestFilter {
 
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    return !request.getRequestURI().startsWith("/api/me/");
+    return !isCourierPath(request.getRequestURI());
+  }
+
+  static boolean isCourierPath(String path) {
+    return path.equals("/api/me") || path.startsWith("/api/me/");
   }
 
   @Override
