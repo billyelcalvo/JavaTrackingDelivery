@@ -1,5 +1,6 @@
 server:
-  port: ${SERVER_PORT:8080}
+  # PORT is what PaaS like Render inject; SERVER_PORT wins if both are set
+  port: ${SERVER_PORT:${PORT:8080}}
   shutdown: graceful
 
 spring:
@@ -9,7 +10,8 @@ spring:
     virtual:
       enabled: true
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/tracking}
+    # Either a full JDBC URL, or the pieces (handy when the platform hands out host/port/db separately)
+    url: ${DATABASE_URL:jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:tracking}}
     username: ${DATABASE_USERNAME:tracking}
     password: ${DATABASE_PASSWORD:tracking}
     hikari:
