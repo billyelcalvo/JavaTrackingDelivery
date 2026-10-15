@@ -1,0 +1,8 @@
+target/
+.git/
+.idea/
+.vscode/
+private/
+loadtest/
+*.md
+.env
