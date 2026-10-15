@@ -12,9 +12,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Everything tunable lives here and comes from environment variables (see application.yml). The
- * app refuses to start if a required secret is missing, which is better than running with a
- * default nobody remembered to change.
+ * Everything tunable lives here and comes from environment variables (see application.yml). The app
+ * refuses to start if a required secret is missing, which is better than running with a default
+ * nobody remembered to change.
  */
 @Validated
 @ConfigurationProperties("tracking")
@@ -26,7 +26,8 @@ public record TrackingProperties(
 
   public record Security(
       @NotBlank String apiKey,
-      @NotBlank @Size(min = 32, message = "must be at least 32 characters for HS256") String jwtSecret,
+      @NotBlank @Size(min = 32, message = "must be at least 32 characters for HS256")
+          String jwtSecret,
       @NotNull Duration courierTokenTtl) {}
 
   public record Ingestion(
