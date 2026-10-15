@@ -1,0 +1,38 @@
+# Render Blueprint: New > Blueprint > pick this repo. Creates the database and the web service.
+databases:
+  - name: tracking-db
+    plan: free
+    databaseName: tracking
+    user: tracking
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: tracking-delivery
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health/readiness
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_HOST
+        fromDatabase: { name: tracking-db, property: host }
+      - key: DATABASE_PORT
+        fromDatabase: { name: tracking-db, property: port }
+      - key: DATABASE_NAME
+        fromDatabase: { name: tracking-db, property: database }
+      - key: DATABASE_USERNAME
+        fromDatabase: { name: tracking-db, property: user }
+      - key: DATABASE_PASSWORD
+        fromDatabase: { name: tracking-db, property: password }
+      - key: DATABASE_POOL_SIZE
+        value: "5"
+      - key: API_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: LOG_FORMAT
+        value: ecs
+      # The free instance has 512 MB; leave room for metaspace, threads and the OS
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=60 -XX:+UseSerialGC -Xss512k -XX:+ExitOnOutOfMemoryError"
