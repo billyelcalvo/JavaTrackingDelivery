@@ -1,0 +1,5 @@
+flush.duration {"COUNT": 284.0, "TOTAL_TIME": 2.457044038, "MAX": 0.040992875}
+flush.rows {"COUNT": 55119.0}
+pings.accepted {"COUNT": 55119.0}
+javatrackingdelivery-app-1 cpu=0.58% mem=330MiB / 7.75GiB
+javatrackingdelivery-db-1 cpu=3.40% mem=125.1MiB / 7.75GiB

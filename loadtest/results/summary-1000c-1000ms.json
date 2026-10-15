@@ -1,0 +1,16 @@
+{
+  "couriers": 1000,
+  "pingIntervalMs": 1000,
+  "orderRatePerSec": 20,
+  "pingsSent": 139000,
+  "pingsPerSec": 992.9,
+  "pingErrors": 11398,
+  "e2eP50": 1,
+  "e2eP95": 8,
+  "e2eP99": 13,
+  "createOrderP50": 4.255,
+  "createOrderP95": 8.755,
+  "createOrderP99": 16.869,
+  "assignedRate": 0.9962515618492295,
+  "httpFailed": 0
+}

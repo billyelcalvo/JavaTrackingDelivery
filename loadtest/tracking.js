@@ -31,6 +31,7 @@ const pingsSent = new Counter('pings_sent');
 const pingErrors = new Counter('ping_errors');
 const e2eLatency = new Trend('ws_e2e_latency', true);
 const assigned = new Rate('order_assigned');
+const ordersCreated = new Counter('orders_created');
 const assignLatency = new Trend('order_create_latency', true);
 
 export const options = {
@@ -92,7 +93,7 @@ export function setup() {
 export function courier(data) {
   const me = data.couriers[exec.scenario.iterationInTest % data.couriers.length];
   // Total test time: warm-up + order phase + a little tail
-  const lifetimeMs = 15000 + parseDuration(DURATION) + 5000;
+  const lifetimeMs = courierLifetimeMs();
   let pos = { lat: CENTER.lat + jitter(), lng: CENTER.lng + jitter() };
 
   const ws = new WebSocket(`${WS_BASE}/ws/couriers?token=${me.token}`);
@@ -124,6 +125,7 @@ export function order(data) {
   check(res, { 'order created': (r) => r.status === 201 });
   assignLatency.add(res.timings.duration);
   if (res.status !== 201) return;
+  ordersCreated.add(1);
   const body = res.json();
   const isAssigned = body.status === 'ASSIGNED';
   assigned.add(isAssigned);
@@ -158,6 +160,10 @@ export function order(data) {
   };
 }
 
+function courierLifetimeMs() {
+  return 15000 + parseDuration(DURATION) + 5000;
+}
+
 function parseDuration(d) {
   const m = /^(\d+)(ms|s|m)$/.exec(d);
   if (!m) return 120000;
@@ -174,7 +180,8 @@ export function handleSummary(data) {
     pingIntervalMs: PING_MS,
     orderRatePerSec: ORDER_RATE,
     pingsSent: v('pings_sent', 'count'),
-    pingsPerSec: v('pings_sent', 'rate'),
+    // k6's own rate divides by the whole run (setup included); this is per second of activity
+    pingsPerSec: v('pings_sent', 'count') / (courierLifetimeMs() / 1000),
     pingErrors: v('ping_errors', 'count') || 0,
     e2eP50: v('ws_e2e_latency', 'med'),
     e2eP95: v('ws_e2e_latency', 'p(95)'),
@@ -182,7 +189,7 @@ export function handleSummary(data) {
     createOrderP50: v('order_create_latency', 'med'),
     createOrderP95: v('order_create_latency', 'p(95)'),
     createOrderP99: v('order_create_latency', 'p(99)'),
-    ordersPerSec: v('order_create_latency', 'count') / (parseDuration(DURATION) / 1000),
+    ordersPerSec: (v('orders_created', 'count') || 0) / (parseDuration(DURATION) / 1000),
     assignedRate: v('order_assigned', 'rate'),
     httpFailed: v('http_req_failed', 'rate'),
   };

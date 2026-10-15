@@ -16,5 +16,3 @@ target/
 # Env files with real secrets
 .env
 
-# k6 raw output
-loadtest/results/*.json

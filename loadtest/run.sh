@@ -18,4 +18,13 @@ for couriers in $LEVELS; do
   until curl -sf localhost:8080/actuator/health/readiness >/dev/null; do sleep 1; done
   k6 run -q -e COURIERS="$couriers" -e PING_MS="$PING_MS" -e ORDER_RATE="$ORDER_RATE" \
     -e DURATION="$DURATION" loadtest/tracking.js || true
+  # Server-side view: how long the batched flushes took and what the container used
+  metric() { curl -s "localhost:8080/actuator/metrics/$1" | python3 -c \
+    'import sys,json; m={x["statistic"]:x["value"] for x in json.load(sys.stdin)["measurements"]}; print(json.dumps(m))'; }
+  {
+    echo "flush.duration $(metric tracking.flush.duration)"
+    echo "flush.rows $(metric tracking.flush.rows)"
+    echo "pings.accepted $(metric tracking.pings.accepted)"
+    docker stats --no-stream --format '{{.Name}} cpu={{.CPUPerc}} mem={{.MemUsage}}'
+  } | tee "loadtest/results/server-${couriers}c.txt"
 done
