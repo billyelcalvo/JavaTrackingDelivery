@@ -53,13 +53,26 @@ public class LocationFlusher implements SmartLifecycle {
   }
 
   /**
-   * Safe to call from anywhere (scheduler, shutdown hook, tests). Only one flush runs at a time;
-   * concurrent callers just skip, since the running one will pick up their data anyway.
+   * Scheduled path. Only one flush runs at a time; if one is already running we skip, since it will
+   * pick up whatever is in the buffer anyway.
    */
   public void flush() {
     if (!flushLock.tryLock()) {
       return;
     }
+    try {
+      flushTimer.record(this::doFlush);
+    } finally {
+      flushLock.unlock();
+    }
+  }
+
+  /**
+   * Waits for any running flush and then flushes again. Used on shutdown, where skipping would lose
+   * whatever arrived after the running flush took its snapshot.
+   */
+  public void flushAndWait() {
+    flushLock.lock();
     try {
       flushTimer.record(this::doFlush);
     } finally {
@@ -124,7 +137,7 @@ public class LocationFlusher implements SmartLifecycle {
       task.cancel(false);
       task = null;
     }
-    flush();
+    flushAndWait();
     log.info("Location flusher stopped after final flush");
   }
 
