@@ -3,6 +3,7 @@ package com.billyelcalvo.tracking.common;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -26,6 +27,14 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ConflictException.class)
   ProblemDetail conflict(ConflictException ex) {
     return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+  }
+
+  /** Last line of defense: a DB constraint (e.g. one active order per courier) caught a race. */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  ProblemDetail constraintViolation(DataIntegrityViolationException ex) {
+    log.warn("Constraint violation reached the API", ex);
+    return ProblemDetail.forStatusAndDetail(
+        HttpStatus.CONFLICT, "Request conflicts with the current state, retry");
   }
 
   @ExceptionHandler(ForbiddenException.class)
