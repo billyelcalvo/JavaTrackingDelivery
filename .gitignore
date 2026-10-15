@@ -1,0 +1,20 @@
+# Build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+
+# Env files with real secrets
+.env
+
+# k6 raw output
+loadtest/results/*.json
