@@ -16,3 +16,6 @@ target/
 # Env files with real secrets
 .env
 
+
+# Local notes that never leave this machine
+/private/
