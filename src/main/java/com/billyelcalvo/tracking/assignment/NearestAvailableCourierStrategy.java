@@ -20,26 +20,46 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>{@code ST_DWithin} caps the search radius so a city with no free couriers doesn't scan the
  *       whole planet.
  *   <li>{@code FOR UPDATE OF c SKIP LOCKED} locks the chosen courier row. If two orders race for
- *       the same courier, the second one silently moves on to the next nearest instead of waiting
+ *       the same courier, the second one silently moves on to the next candidate instead of waiting
  *       or double-assigning.
  * </ul>
+ *
+ * <p>The KNN search and the lock are split on purpose. Locking straight off the KNN index scan
+ * breaks under concurrency: when a locked row changed, Postgres re-checks it (EvalPlanQual) and
+ * can't re-fetch from an ordered GiST scan, failing with "failed to fetch tuple for EvalPlanQual
+ * recheck". So the CTE picks the closest candidates without locks, and the outer query locks among
+ * them, re-checking {@code status} on the latest row version.
  */
 @Component
 public class NearestAvailableCourierStrategy implements AssignmentStrategy {
 
   private static final String QUERY =
       """
+      WITH candidates AS MATERIALIZED (
+        SELECT l.courier_id, l.location <-> p.geog AS distance
+        FROM courier_location l
+        JOIN courier c ON c.id = l.courier_id
+        CROSS JOIN (SELECT ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography AS geog) p
+        WHERE c.status = 'AVAILABLE'
+          AND l.updated_at >= now() - make_interval(secs => :freshSeconds)
+          AND ST_DWithin(l.location, p.geog, :radius)
+        ORDER BY l.location <-> p.geog
+        LIMIT :candidates
+      )
       SELECT c.id
-      FROM courier_location l
-      JOIN courier c ON c.id = l.courier_id
-      CROSS JOIN (SELECT ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography AS geog) p
+      FROM candidates k
+      JOIN courier c ON c.id = k.courier_id
       WHERE c.status = 'AVAILABLE'
-        AND l.updated_at >= now() - make_interval(secs => :freshSeconds)
-        AND ST_DWithin(l.location, p.geog, :radius)
-      ORDER BY l.location <-> p.geog
+      ORDER BY k.distance
       LIMIT 1
       FOR UPDATE OF c SKIP LOCKED
       """;
+
+  /**
+   * How many nearby couriers we consider per attempt. If all of them get grabbed by concurrent
+   * assignments in the same instant, the order stays PENDING and the retry job tries again.
+   */
+  static final int CANDIDATES = 20;
 
   private final JdbcClient jdbc;
   private final TrackingProperties.Assignment config;
@@ -57,6 +77,7 @@ public class NearestAvailableCourierStrategy implements AssignmentStrategy {
         .param("lng", order.pickup().lng())
         .param("radius", config.searchRadiusMeters())
         .param("freshSeconds", (double) config.locationFreshness().toSeconds())
+        .param("candidates", CANDIDATES)
         .query(UUID.class)
         .optional();
   }
