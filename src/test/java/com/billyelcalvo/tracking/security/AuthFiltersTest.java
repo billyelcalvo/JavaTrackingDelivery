@@ -48,7 +48,8 @@ class AuthFiltersTest {
 
   @Test
   void apiKeyFilterIgnoresCourierAppAndNonApiPaths() throws Exception {
-    for (String path : new String[] {"/api/me/status", "/actuator/health", "/swagger-ui.html"}) {
+    for (String path :
+        new String[] {"/api/me", "/api/me/status", "/actuator/health", "/swagger-ui.html"}) {
       var chain = new MockFilterChain();
       apiKeyFilter.doFilter(
           new MockHttpServletRequest("GET", path), new MockHttpServletResponse(), chain);
