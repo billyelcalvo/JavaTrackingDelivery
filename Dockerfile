@@ -4,13 +4,14 @@
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
 
-# Resolve dependencies first so code changes don't invalidate this layer
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q dependency:go-offline
-
 COPY src src
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q -DskipTests package \
+
+# The cache mount keeps ~/.m2 between builds, so only the first build downloads dependencies.
+# (dependency:go-offline was dropped: it misses plugins resolved at runtime and broke CI builds.)
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -ntp -DskipTests \
+      -Daether.connector.http.retryHandler.count=5 package \
  && java -Djarmode=tools -jar target/tracking-delivery-*.jar extract --layers --launcher --destination target/extracted
 
 # ---- Runtime stage: JRE only, non-root, layered jar ----
