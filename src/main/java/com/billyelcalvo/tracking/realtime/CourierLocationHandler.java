@@ -57,7 +57,7 @@ public class CourierLocationHandler extends TextWebSocketHandler {
   @Override
   public void afterConnectionEstablished(WebSocketSession session) {
     connected.incrementAndGet();
-    log.debug("Courier connected courierId={}", courierId(session));
+    log.atDebug().addKeyValue("courierId", courierId(session)).log("Courier connected");
   }
 
   @Override
@@ -94,12 +94,18 @@ public class CourierLocationHandler extends TextWebSocketHandler {
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
     connected.decrementAndGet();
-    log.debug("Courier disconnected courierId={} code={}", courierId(session), status.getCode());
+    log.atDebug()
+        .addKeyValue("courierId", courierId(session))
+        .addKeyValue("code", status.getCode())
+        .log("Courier disconnected");
   }
 
   @Override
   public void handleTransportError(WebSocketSession session, Throwable exception) {
-    log.debug("Courier socket error courierId={}", courierId(session), exception);
+    log.atDebug()
+        .addKeyValue("courierId", courierId(session))
+        .setCause(exception)
+        .log("Courier socket error");
   }
 
   private void reject(WebSocketSession session, String reason) throws IOException {

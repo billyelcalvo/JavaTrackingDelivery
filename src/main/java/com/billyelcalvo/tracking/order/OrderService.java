@@ -53,7 +53,7 @@ public class OrderService {
   @Transactional
   public DeliveryOrder create(GeoPoint pickup, GeoPoint dropoff) {
     DeliveryOrder order = orders.insert(pickup, dropoff);
-    log.info("Order created orderId={}", order.id());
+    log.atInfo().addKeyValue("orderId", order.id()).log("Order created");
     return assigner.tryAssign(order);
   }
 
@@ -119,13 +119,16 @@ public class OrderService {
             .orElseThrow(() -> new ConflictException("Order changed concurrently, retry"));
     events.publishEvent(
         new OrderStatusChanged(updated.id(), updated.courierId(), target, clock.instant()));
-    log.info("Order status changed orderId={} status={}", updated.id(), target);
+    log.atInfo()
+        .addKeyValue("orderId", updated.id())
+        .addKeyValue("status", target)
+        .log("Order status changed");
     return updated;
   }
 
   private void releaseCourier(UUID courierId) {
     if (!couriers.updateStatus(courierId, CourierStatus.BUSY, CourierStatus.AVAILABLE)) {
-      log.warn("Courier was not BUSY when releasing courierId={}", courierId);
+      log.atWarn().addKeyValue("courierId", courierId).log("Courier was not BUSY when releasing");
     }
   }
 

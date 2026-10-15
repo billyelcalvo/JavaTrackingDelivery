@@ -50,7 +50,10 @@ public class LocationIngestionService {
         listener.onLocation(ping);
       } catch (RuntimeException ex) {
         // A broken subscriber must never make us lose the ping itself
-        log.warn("Location listener failed listener={}", listener.getClass().getSimpleName(), ex);
+        log.atWarn()
+            .addKeyValue("listener", listener.getClass().getSimpleName())
+            .setCause(ex)
+            .log("Location listener failed");
       }
     }
   }

@@ -35,7 +35,7 @@ public class ActiveAssignmentRegistry {
   public void reload() {
     orderByCourier.clear();
     orders.findActiveAssignments().forEach(a -> orderByCourier.put(a.courierId(), a.orderId()));
-    log.info("Active assignments loaded count={}", orderByCourier.size());
+    log.atInfo().addKeyValue("count", orderByCourier.size()).log("Active assignments loaded");
   }
 
   @TransactionalEventListener(fallbackExecution = true)

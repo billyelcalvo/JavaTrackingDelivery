@@ -89,7 +89,10 @@ public class LocationFlusher implements SmartLifecycle {
       // Most likely the database is down or slow. Keep the positions for the next round.
       failures.increment();
       buffer.requeueLatest(latest);
-      log.error("Flush of latest positions failed, requeued count={}", latest.size(), ex);
+      log.atError()
+          .addKeyValue("count", latest.size())
+          .setCause(ex)
+          .log("Flush of latest positions failed, requeued");
       return;
     }
 
@@ -101,8 +104,11 @@ public class LocationFlusher implements SmartLifecycle {
         failures.increment();
         int lost = buffer.requeueHistory(history);
         dropped.increment(lost);
-        log.error(
-            "Flush of history failed, requeued={} dropped={}", history.size() - lost, lost, ex);
+        log.atError()
+            .addKeyValue("requeued", history.size() - lost)
+            .addKeyValue("dropped", lost)
+            .setCause(ex)
+            .log("Flush of history failed");
         return;
       }
     }
@@ -114,12 +120,16 @@ public class LocationFlusher implements SmartLifecycle {
     } catch (DataIntegrityViolationException ex) {
       // One bad row (e.g. a courier deleted while still connected) fails the whole batch.
       // Retry row by row so a single poison ping can't block everyone else forever.
-      log.warn("Batch upsert rejected, retrying row by row size={}", latest.size());
+      log.atWarn()
+          .addKeyValue("size", latest.size())
+          .log("Batch upsert rejected, retrying row by row");
       for (LocationPing ping : latest) {
         try {
           repository.upsertLatest(List.of(ping));
         } catch (DataIntegrityViolationException rowEx) {
-          log.warn("Dropping location for unknown courier courierId={}", ping.courierId());
+          log.atWarn()
+              .addKeyValue("courierId", ping.courierId())
+              .log("Dropping location for unknown courier");
         }
       }
     }
@@ -128,7 +138,7 @@ public class LocationFlusher implements SmartLifecycle {
   @Override
   public void start() {
     task = scheduler.scheduleWithFixedDelay(this::flushSafely, config.flushInterval());
-    log.info("Location flusher started interval={}", config.flushInterval());
+    log.atInfo().addKeyValue("interval", config.flushInterval()).log("Location flusher started");
   }
 
   @Override

@@ -60,7 +60,10 @@ public class InMemoryTrackingHub implements TrackingHub {
       try {
         session.sendMessage(payload);
       } catch (IOException | RuntimeException ex) {
-        log.debug("Dropping tracking subscriber orderId={} sessionId={}", orderId, session.getId());
+        log.atDebug()
+            .addKeyValue("orderId", orderId)
+            .addKeyValue("sessionId", session.getId())
+            .log("Dropping tracking subscriber");
         unsubscribe(orderId, session);
         closeQuietly(session, CloseStatus.SESSION_NOT_RELIABLE);
       }

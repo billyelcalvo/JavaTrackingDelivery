@@ -64,7 +64,7 @@ public class CourierAssigner {
     Optional<UUID> courierId = pickTimer.record(() -> strategy.pickCourier(order));
     if (courierId.isEmpty()) {
       noCourier.increment();
-      log.debug("No courier available for order orderId={}", order.id());
+      log.atDebug().addKeyValue("orderId", order.id()).log("No courier available for order");
       return order;
     }
     // The row is locked by the strategy, so this can only fail if the strategy has a bug
@@ -76,7 +76,10 @@ public class CourierAssigner {
     events.publishEvent(
         new OrderStatusChanged(
             updated.id(), updated.courierId(), OrderStatus.ASSIGNED, clock.instant()));
-    log.info("Order assigned orderId={} courierId={}", updated.id(), updated.courierId());
+    log.atInfo()
+        .addKeyValue("orderId", updated.id())
+        .addKeyValue("courierId", updated.courierId())
+        .log("Order assigned");
     return updated;
   }
 }

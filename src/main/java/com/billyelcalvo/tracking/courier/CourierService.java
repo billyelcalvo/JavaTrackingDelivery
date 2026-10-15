@@ -28,7 +28,7 @@ public class CourierService {
   @Transactional
   public RegisteredCourier register(String name) {
     Courier courier = couriers.insert(name.strip());
-    log.info("Courier registered courierId={}", courier.id());
+    log.atInfo().addKeyValue("courierId", courier.id()).log("Courier registered");
     return new RegisteredCourier(courier, tokens.issue(courier.id()));
   }
 
@@ -56,7 +56,10 @@ public class CourierService {
       // Someone (most likely the assignment job) changed it between our read and write
       throw new ConflictException("Courier status changed concurrently, retry");
     }
-    log.info("Courier availability changed courierId={} status={}", courierId, target);
+    log.atInfo()
+        .addKeyValue("courierId", courierId)
+        .addKeyValue("status", target)
+        .log("Courier availability changed");
     return get(courierId);
   }
 

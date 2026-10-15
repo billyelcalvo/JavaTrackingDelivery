@@ -59,7 +59,7 @@ public class PendingOrderRetryJob implements SmartLifecycle {
             });
     int assigned = count == null ? 0 : count;
     if (assigned > 0) {
-      log.info("Pending orders assigned on retry count={}", assigned);
+      log.atInfo().addKeyValue("count", assigned).log("Pending orders assigned on retry");
     }
     return assigned;
   }
