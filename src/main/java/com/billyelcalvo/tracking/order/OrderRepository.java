@@ -120,7 +120,8 @@ public class OrderRepository {
               delivered_at = CASE WHEN :to = 'DELIVERED' THEN now() ELSE delivered_at END,
               cancelled_at = CASE WHEN :to = 'CANCELLED' THEN now() ELSE cancelled_at END
             WHERE id = :id AND status = :from
-            RETURNING """
+            RETURNING
+            """
                 + COLUMNS)
         .param("id", id)
         .param("from", from.name())
